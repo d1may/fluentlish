@@ -58,7 +58,7 @@ async def func_with_word(callback: types.CallbackQuery, state: FSMContext):
                 f"🧠 <b>Definition:</b> <code>{result['definition']}</code>\n"
                 f"🧾 <b>Example 1:</b> {result['examples'][0] if result['examples'] else '—'}\n"
                 f"🧾 <b>Example 2:</b> {result['examples'][1] if len(result['examples']) > 1 else '—'}\n"
-                f"🧠 <b>Tranlation:</b> <tg-spoiler>{result['translation']}</tg-spoiler>\n\n"
+                f"✏️ <b>Tranlation:</b> <tg-spoiler>{result['translation']}</tg-spoiler>\n\n"
             )
             await callback.message.answer(text)
         else:

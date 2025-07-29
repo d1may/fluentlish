@@ -21,7 +21,7 @@ from bot.database import create_db, queries
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # приклад: https://fluentlishbot.onrender.com/webhook
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # приклад: 
 
 logging.basicConfig(level=logging.INFO)
 logging.info("Бот запускається...")
