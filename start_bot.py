@@ -64,7 +64,7 @@ async def check_premium_expiry_periodically():
         user_ids = await queries.all_user_ids()
         for uid in user_ids:
             await queries.deactivate_expired_premium(uid)
-        await asyncio.sleep(60)
+        await asyncio.sleep(840)
 
 # ───────────────────🌐 Webhook FastAPI App ─────────────────────
 async def on_startup(bot: Bot):
