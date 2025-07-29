@@ -83,6 +83,10 @@ async def main():
     app = web.Application()
     SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
 
+    async def ping(request):
+        return web.Response(text="ok")
+    app.router.add_get("/ping", ping)
+
     setup_application(app, dp, bot=bot, on_startup=on_startup, on_shutdown=on_shutdown)
     return app
 
