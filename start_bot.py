@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+
 
 from dotenv import load_dotenv
 
@@ -21,7 +21,6 @@ from bot.database import create_db, queries
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # приклад: 
 
 logging.basicConfig(level=logging.INFO)
 logging.info("Бот запускається...")
@@ -67,11 +66,18 @@ async def check_premium_expiry_periodically():
         await asyncio.sleep(840)
 
 # ───────────────────🌐 Webhook FastAPI App ─────────────────────
-async def on_startup(bot: Bot):
-    await bot.set_webhook(WEBHOOK_URL)
+async def web_server():
+    async def handle(request):
+        return web.Response(text="Bot is running")
 
-async def on_shutdown(bot: Bot):
-    await bot.delete_webhook()
+    app = web.Application()
+    app.router.add_get("/", handle)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+    await site.start()
+
 
 async def main():
     create_db.main_db()
@@ -80,17 +86,14 @@ async def main():
     asyncio.create_task(send_words_periodically())
     asyncio.create_task(check_premium_expiry_periodically())
 
-    app = web.Application()
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
+    await asyncio.gather(
+        dp.start_polling(bot),
+        web_server(),
 
-    async def ping(request):
-        return web.Response(text="ok")
-    app.router.add_get("/ping", ping)
-
-    setup_application(app, dp, bot=bot, on_startup=on_startup, on_shutdown=on_shutdown)
-    return app
+    )
 
 # ───────────────────── Запуск Web-сервера ──────────────────────
 if __name__ == "__main__":
-    app = asyncio.run(main())
-    web.run_app(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+    asyncio.run(main())
+
+
