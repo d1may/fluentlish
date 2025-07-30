@@ -83,16 +83,13 @@ async def main():
     create_db.main_db()
     create_db.status_db()
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    await bot.delete_webhook(drop_pending_updates=True)  # ⬅️ Додано
 
     asyncio.create_task(send_words_periodically())
     asyncio.create_task(check_premium_expiry_periodically())
+    asyncio.create_task(web_server())  # Якщо хочеш залишити /ping
 
-    await asyncio.gather(
-        dp.start_polling(bot),
-        web_server(),
-
-    )
+    await dp.start_polling(bot)
 
 # ───────────────────── Запуск Web-сервера ──────────────────────
 if __name__ == "__main__":
