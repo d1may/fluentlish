@@ -83,6 +83,8 @@ async def main():
     create_db.main_db()
     create_db.status_db()
 
+    await bot.delete_webhook(drop_pending_updates=True)
+
     asyncio.create_task(send_words_periodically())
     asyncio.create_task(check_premium_expiry_periodically())
 
