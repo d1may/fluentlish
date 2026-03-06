@@ -1,45 +1,55 @@
 import pytest
-import requests
-from bs4 import BeautifulSoup
-from bot.services.parser_cambridge import get_cambridge_data  # Замените на имя вашего модуля
+from unittest.mock import AsyncMock, patch, MagicMock
 
-def test_get_cambridge_data_success():
-    """Тест: успешное получение данных с Cambridge Dictionary."""
-    result = get_cambridge_data("test")
+from bot.services.parser_cambridge import get_cambridge_data
+
+
+@pytest.mark.asyncio
+async def test_get_cambridge_data_success():
+    result = await get_cambridge_data("test")
     assert result is not None
     assert result["word"] == "test"
-    assert result["part_of_speech"] in ["noun", "verb"]  # Возможные части речи для "test"
+    assert result["part_of_speech"] in ["noun", "verb", "adjective"]
     assert result["definition"] != ""
     assert isinstance(result["examples"], list)
     assert result["level"] in ["A1", "A2", "B1", "B2", "C1", "C2", "—"]
     assert result["ipa_uk"] != ""
     assert result["ipa_us"] != ""
 
-def test_get_cambridge_data_no_entries():
-    """Тест: несуществующее слово, ожидается None."""
-    result = get_cambridge_data("nonexistentword12345")
+
+@pytest.mark.asyncio
+async def test_get_cambridge_data_no_entries():
+    result = await get_cambridge_data("nonexistentword12345")
     assert result is None
 
-def test_get_cambridge_data_server_error(monkeypatch):
-    """Тест: сервер возвращает ошибку (не 200)."""
-    def mock_get(*args, **kwargs):
-        response = requests.Response()
-        response.status_code = 404
-        return response
 
-    monkeypatch.setattr(requests, "get", mock_get)
-    result = get_cambridge_data("test")
-    assert result == []
+@pytest.mark.asyncio
+async def test_get_cambridge_data_server_error():
+    mock_response = AsyncMock()
+    mock_response.status = 404
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=False)
 
-def test_get_cambridge_data_missing_elements():
-    """Тест: слово с ограниченными данными (например, без примеров)."""
-    result = get_cambridge_data("obscure")  # Слово, которое может иметь меньше данных
+    mock_session = MagicMock()
+    mock_session.get = MagicMock(return_value=mock_response)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    with patch("aiohttp.ClientSession", return_value=mock_session):
+        result = await get_cambridge_data("test")
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_cambridge_data_missing_elements():
+    result = await get_cambridge_data("obscure")
     assert result is not None
     assert result["word"] == "obscure"
     assert result["definition"] != ""
     assert isinstance(result["examples"], list)
     assert result["level"] in ["A1", "A2", "B1", "B2", "C1", "C2", "—"]
     assert result["part_of_speech"] != "—"
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

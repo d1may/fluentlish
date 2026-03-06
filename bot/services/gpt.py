@@ -1,20 +1,14 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = [
-#         "openai",
-# ]
-# ///
-from openai import OpenAI
-from dotenv import load_dotenv
 import os
 
+from openai import AsyncOpenAI
+from dotenv import load_dotenv
+
 load_dotenv()
-API = os.getenv("API")
 
-client = OpenAI(api_key=API)
+client = AsyncOpenAI(api_key=os.getenv("API"))
 
-def check_sentence(target, sentence):
 
+async def check_sentence(target, sentence):
     prompt = (
         f"If the word '{target}' or any of its forms (e.g., past, future, present) is present in the sentence, "
         f"then your task is to check the sentence for grammatical errors and write them out if there are any. "
@@ -22,11 +16,9 @@ def check_sentence(target, sentence):
         f"Sentence: \"{sentence}\""
     )
 
-    response2 = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model="gpt-4",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+        messages=[{"role": "user", "content": prompt}],
     )
 
-    return (response2.choices[0].message.content)
+    return response.choices[0].message.content

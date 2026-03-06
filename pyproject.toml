@@ -1,0 +1,25 @@
+[project]
+name = "fluentlish"
+version = "0.1.0"
+description = "Telegram bot for learning English words."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "d1may" },
+]
+dependencies = [
+  "beautifulsoup4",
+  "aiogram",
+  "python-dotenv",
+  "openai",
+  "aiosqlite",
+  "spacy",
+  "aiohttp",
+  "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-asyncio",
+]

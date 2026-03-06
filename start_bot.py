@@ -6,10 +6,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
-
-
 from dotenv import load_dotenv
-
 from aiohttp import web
 
 from bot.keyboards import inline_keyboards, reply_keyboards
@@ -17,15 +14,18 @@ from bot.services import word_selector
 from bot.handlers import callbacks, commands, user_message, payment
 from bot.database import create_db, queries
 
-# ────────────────────🔧 Налаштування ────────────────────────
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 
-logging.basicConfig(level=logging.INFO)
-logging.info("Бот запускається...")
+WORD_SEND_INTERVAL = 3600
+PREMIUM_CHECK_INTERVAL = 840
+STARTUP_DELAY = 2
+DEFAULT_PORT = 10000
 
-# ────────────────────🤖 Ініціалізація ────────────────────────
+logging.basicConfig(level=logging.INFO)
+logging.info("Bot is starting...")
+
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 
@@ -35,12 +35,12 @@ dp.include_routers(
     callbacks.router,
     commands.router,
     user_message.router,
-    payment.router
+    payment.router,
 )
 
-# ───────────────────📨 Автоматичне надсилання слів ─────────────
+
 async def send_words_periodically():
-    await asyncio.sleep(2)
+    await asyncio.sleep(STARTUP_DELAY)
 
     while True:
         user_ids = await queries.all_user_ids()
@@ -51,21 +51,30 @@ async def send_words_periodically():
                 await bot.send_message(
                     uid,
                     f"🔤 Word: <b>{word}</b>",
-                    reply_markup=inline_keyboards.category_kb
+                    reply_markup=inline_keyboards.category_kb,
                 )
             except Exception as e:
-                logging.error(f"❌ Помилка надсилання: {e} | User ID: {uid}")
+                logging.error("Failed to send word: %s | User ID: %s", e, uid)
 
-        await asyncio.sleep(3600)
+        await asyncio.sleep(WORD_SEND_INTERVAL)
+
 
 async def check_premium_expiry_periodically():
     while True:
         user_ids = await queries.all_user_ids()
         for uid in user_ids:
-            await queries.deactivate_expired_premium(uid)
-        await asyncio.sleep(840)
+            expired = await queries.deactivate_expired_premium(uid)
+            if expired:
+                try:
+                    await bot.send_message(
+                        uid,
+                        "❌ Your premium subscription has expired. You can renew it in the menu.",
+                    )
+                except Exception as e:
+                    logging.error("Failed to send premium expiry notice: %s", e)
+        await asyncio.sleep(PREMIUM_CHECK_INTERVAL)
 
-# ───────────────────🌐 Webhook FastAPI App ─────────────────────
+
 async def web_server():
     async def handle(request):
         return web.Response(text="Bot is running")
@@ -75,7 +84,7 @@ async def web_server():
 
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+    site = web.TCPSite(runner, host="0.0.0.0", port=int(os.getenv("PORT", DEFAULT_PORT)))
     await site.start()
 
 
@@ -83,16 +92,14 @@ async def main():
     create_db.main_db()
     create_db.status_db()
 
-    await bot.delete_webhook(drop_pending_updates=True)  # ⬅️ Додано
+    await bot.delete_webhook(drop_pending_updates=True)
 
     asyncio.create_task(send_words_periodically())
     asyncio.create_task(check_premium_expiry_periodically())
-    asyncio.create_task(web_server())  # Якщо хочеш залишити /ping
+    asyncio.create_task(web_server())
 
     await dp.start_polling(bot)
 
-# ───────────────────── Запуск Web-сервера ──────────────────────
+
 if __name__ == "__main__":
     asyncio.run(main())
-
-

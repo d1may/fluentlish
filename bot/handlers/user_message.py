@@ -19,8 +19,8 @@ async def user_sentence_with_word(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     is_premium = await queries.check_is_premium(user_id)
     if is_premium == 1:
-        result = gpt.check_sentence(target, message.text)
+        result = await gpt.check_sentence(target, message.text)
     else:
-        result = check_sentence.sentence_contains_word(target, message.text)
+        result = await check_sentence.sentence_contains_word(target, message.text)
     await message.answer(result)
     await state.clear()

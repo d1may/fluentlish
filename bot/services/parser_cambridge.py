@@ -42,8 +42,7 @@ async def get_cambridge_data(word):
                     if definition_tag:
                         definition = definition_tag.text.strip()
                         examples = [ex.text.strip() for ex in example_tags]
-                        # Витягуємо текст з першого перекладу, якщо є
-                        translation = trans_tag.text.strip()
+                        translation = trans_tag.text.strip() if trans_tag else "—"
                         results.append({
                             "definition": definition,
                             "examples": examples,
